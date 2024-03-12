@@ -1,0 +1,14 @@
+source="_raw" "Consuming Message*"
+| rex field=_raw ">>> Consume Method >>>\{(?<jsonPayload>.*?)\}"
+| eval jsonPayload=trim(jsonPayload, "\"")
+| from_json_object=jsonPayload
+| fields - jsonPayload
+| rex field=_raw /"status":"(?<status>.*?)","mnemonic":"(?<mnemonic>.*?)","processUuid":"(?<processUuid>.*?)","attributes":\{(?<attributes>.*?)\}/
+| eval attributes=replace(attributes, "^\{|]\}$", "")
+| rex field=attributes /"x-b3-traceId":(?<traceId>.*?),/
+| eval errors=split(attributes, '"errors":\[')[1]
+| eval errors=replace(errors, "\}$", "")
+| mvexpand errors
+| rex field=errors /"code":(?<code>\d+),"message":"(?<message>.*?)"/
+| eval errors=mvzip(code, message)
+| table status, mnemonic, processUuid, attributes, traceId, errors
