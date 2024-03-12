@@ -12,3 +12,14 @@ source="_raw" "Consuming Message*"
 | rex field=errors /"code":(?<code>\d+),"message":"(?<message>.*?)"/
 | eval errors=mvzip(code, message)
 | table status, mnemonic, processUuid, attributes, traceId, errors
+
+
+| rex field=_raw "(?<jsonData>{.*})"
+| eval jsonData=trim(jsonData, "\"")
+| spath input=jsonData
+| fields - _raw, jsonData
+| rename "status" as status, "mnemonic" as mnemonic, "processUuid" as processUuid, "attributes.x-b3-traceId" as traceId
+| eval errors_array=mvindex("attributes.errors", mvfind("attributes.errors", "code"))
+| mvexpand errors_array
+| eval errors = "code=" + errors_array.code + ", message=" + errors_array.message
+| table _raw, status, mnemonic, processUuid, traceId, errors
