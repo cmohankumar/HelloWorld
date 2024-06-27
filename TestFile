@@ -24,12 +24,4 @@ source="_raw" "Consuming Message*"
 | eval errors = "code=" + errors_array.code + ", message=" + errors_array.message
 | table _raw, status, mnemonic, processUuid, traceId, errors
 
-Dear Team,
-As today marks my last day with [Company Name], I wanted to take a moment to express my heartfelt gratitude to each of you. Working alongside such a talented and dedicated group has been an incredible journey, and I'm truly grateful for the experiences we've shared.
-To my amazing colleagues:
-Your passion, creativity, and collaborative spirit have been a constant source of inspiration. I've learned so much from each of you, and I'm confident that this team will continue to achieve great things. Keep pushing boundaries, supporting one another, and making a positive impact in everything you do.
-A special thank you to our managers:
-[Manager Name 1], [Manager Name 2], and [Manager Name 3], your leadership and guidance have been instrumental in my professional growth. Your unwavering support, mentorship, and trust have empowered me to take on new challenges and reach new heights. I am deeply appreciative of the opportunities you've provided and the wisdom you've shared.
-As I embark on the next chapter of my career, I carry with me the valuable lessons, friendships, and memories we've created together. I have no doubt that [Company Name] will continue to thrive under your collective expertise and dedication.
-Please stay in touch – I'd love to hear about your future successes and milestones. You can reach me at [your personal email] or connect with me on LinkedIn [your LinkedIn profile link].
-Wishing you all the very best in your future endeavors. Thank you for making my time here truly special.
+
