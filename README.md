@@ -12,3 +12,8 @@ public class Main {
         System.out.println(result);
     }
 }
+
+CI-Specific Configuration
+For CI builds specifically:
+Set the environment variable SPOTLESS_DISABLE_LINE_ENDINGS=true in your CI configuration.
+Or use a CI-specific Spotless profile in your build tool configuration that disables line ending checks.
