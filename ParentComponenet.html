@@ -1,0 +1,5 @@
+<div *ngIf="showChild">
+  <app-child [savedData]="savedChildData" (dataSaved)="saveChildData($event)"></app-child>
+</div>
+
+<button (click)="toggleChild()">Toggle Child Component</button>
