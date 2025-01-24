@@ -1,0 +1,21 @@
+"Aspect","Details"
+"Endpoint Name","Get Stock Information"
+"HTTP Method","GET"
+"Path","/api/v1/stocks/{symbol}"
+"Description","Retrieves detailed information for a specific stock"
+"Request Parameters","symbol: string (required) - The stock symbol"
+"Query Parameters","fields: string (optional) - Comma-separated list of fields to include"
+"Request Body","N/A"
+"Response","Success Response Code: 200 OK"
+"Response Body","JSON object containing stock details"
+"Error Responses","400: Bad Request - Invalid symbol
+401: Unauthorized - User not authenticated
+404: Not Found - Stock not found
+500: Internal Server Error"
+"Authentication","Bearer Token"
+"Rate Limiting","100 requests per minute per API key"
+"Caching Strategy","Cache responses for 5 minutes"
+"Example Request","GET /api/v1/stocks/AAPL?fields=price,volume"
+"Example Response","json<br>{<br>  ""symbol"": ""AAPL"",<br>  ""price"": 150.25,<br>  ""volume"": 1000000<br>}<br>"
+"Notes","- Ensure proper error handling for invalid symbols
+- Implement field filtering based on the 'fields' parameter"
