@@ -19,8 +19,8 @@ Set the environment variable SPOTLESS_DISABLE_LINE_ENDINGS=true in your CI confi
 Or use a CI-specific Spotless profile in your build tool configuration that disables line ending checks.
 
 public void extractBarCode(List<MultipartFile> files) throws DataExtractionException {
+    ExecutorService threadPool = createFixedThreadPool(5); // Create a thread pool with 5 threads
     try {
-        ExecutorService threadPool = createFixedThreadPool(5);
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         for (MultipartFile file : files) {
@@ -30,13 +30,14 @@ public void extractBarCode(List<MultipartFile> files) throws DataExtractionExcep
                     try {
                         return objectService.putObject(file.getOriginalFilename(), inputStream);
                     } catch (Exception e) {
-                        // Log the error
+                        // Log the error and rethrow as RuntimeException
                         System.err.println("Error processing file " + file.getOriginalFilename() + ": " + e.getMessage());
-                        // Rethrow as a runtime exception to be handled by the CompletableFuture
                         throw new RuntimeException(e);
                     }
                 }, threadPool)
-                .thenAccept(objectServiceResponse -> System.out.println("File processed: " + file.getOriginalFilename()))
+                .thenAccept(objectServiceResponse -> 
+                    System.out.println("File processed: " + file.getOriginalFilename())
+                )
                 .exceptionally(e -> {
                     System.err.println("Failed to process file " + file.getOriginalFilename() + ": " + e.getMessage());
                     return null;
@@ -44,11 +45,23 @@ public void extractBarCode(List<MultipartFile> files) throws DataExtractionExcep
             );
         }
 
-        // Wait for all futures to complete
+        // Wait for all tasks to complete
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
     } catch (SafePathCheckException | IOException e) {
         throw new DataExtractionException(e.getMessage());
+    } finally {
+        // Properly shutdown the thread pool
+        threadPool.shutdown(); // Initiates an orderly shutdown
+        try {
+            if (!threadPool.awaitTermination(60, TimeUnit.SECONDS)) { // Wait for tasks to finish
+                System.err.println("Thread pool did not terminate within the timeout. Forcing shutdown...");
+                threadPool.shutdownNow(); // Force shutdown if tasks don't complete in time
+            }
+        } catch (InterruptedException ex) {
+            System.err.println("Thread pool shutdown interrupted. Forcing shutdown...");
+            threadPool.shutdownNow(); // Force shutdown on interruption
+            Thread.currentThread().interrupt(); // Restore interrupted status
+        }
     }
 }
-
