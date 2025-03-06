@@ -113,3 +113,16 @@ ResponseEntity<String> response = restTemplate.postForEntity(
     String.class
 );
 
+
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface UserMapper {
+    
+    @Mapping(source = "password", target = "hashedPassword")
+    User toModel(UserDTO userDTO);
+
+    @Mapping(source = "hashedPassword", target = "password")
+    UserDTO toDTO(User user);
+}
