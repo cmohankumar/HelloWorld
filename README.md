@@ -65,3 +65,51 @@ public void extractBarCode(List<MultipartFile> files) throws DataExtractionExcep
         }
     }
 }
+
+
+Create a MultiValueMap to hold the parts of the request:
+
+MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+Add the FileUploadRequest as a JSON part:
+
+FileUploadRequest request = new FileUploadRequest();
+// Set properties of request
+HttpHeaders jsonHeaders = new HttpHeaders();
+jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
+HttpEntity<FileUploadRequest> requestEntity = new HttpEntity<>(request, jsonHeaders);
+body.add("json", requestEntity);
+
+Add the MultipartFile objects:
+
+for (MultipartFile file : files) {
+    HttpHeaders fileHeaders = new HttpHeaders();
+    fileHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+    HttpEntity<ByteArrayResource> fileEntity = new HttpEntity<>(
+        new ByteArrayResource(file.getBytes()) {
+            @Override
+            public String getFilename() {
+                return file.getOriginalFilename();
+            }
+        }, fileHeaders);
+    body.add("files", fileEntity);
+}
+
+Set the headers for the entire request:
+
+HttpHeaders headers = new HttpHeaders();
+headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+Create the final HttpEntity:
+
+HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+Send the request using RestTemplate:
+
+RestTemplate restTemplate = new RestTemplate();
+ResponseEntity<String> response = restTemplate.postForEntity(
+    "http://your-api-url/upload",
+    requestEntity,
+    String.class
+);
+
