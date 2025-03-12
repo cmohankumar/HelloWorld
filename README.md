@@ -1,128 +1,98 @@
 # HelloWorld
-My first hello world Repo...
-import java.util.regex.Pattern;
-
-public class Main {
-    public static void main(String[] args) {
-        String text = "Hello world:then is not enough:welcome my:to my space";
-
-        String result = text.replaceAll("(?<=:[^:]*+), (?=[^:]++*:[^:]*+$)", 
-                System.lineSeparator());
-
-        System.out.println(result);
-    }
-}
-
 CI-Specific Configuration
 For CI builds specifically:
 Set the environment variable SPOTLESS_DISABLE_LINE_ENDINGS=true in your CI configuration.
 Or use a CI-specific Spotless profile in your build tool configuration that disables line ending checks.
 
-public void extractBarCode(List<MultipartFile> files) throws DataExtractionException {
-    ExecutorService threadPool = createFixedThreadPool(5); // Create a thread pool with 5 threads
-    try {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
+Client → Controller → Sync Middle Service → External API (sync)
+                              │
+                              └→ Async File Service → Fileserver + DB
+@RestController
+public class FileController {
 
-        for (MultipartFile file : files) {
-            InputStream inputStream = file.getInputStream();
-            futures.add(
-                CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return objectService.putObject(file.getOriginalFilename(), inputStream);
-                    } catch (Exception e) {
-                        // Log the error and rethrow as RuntimeException
-                        System.err.println("Error processing file " + file.getOriginalFilename() + ": " + e.getMessage());
-                        throw new RuntimeException(e);
-                    }
-                }, threadPool)
-                .thenAccept(objectServiceResponse -> 
-                    System.out.println("File processed: " + file.getOriginalFilename())
-                )
-                .exceptionally(e -> {
-                    System.err.println("Failed to process file " + file.getOriginalFilename() + ": " + e.getMessage());
-                    return null;
-                })
-            );
-        }
+    @Autowired
+    private SyncMiddleService middleService;
 
-        // Wait for all tasks to complete
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    @PostMapping("/upload")
+    public ResponseEntity<ApiResult> uploadFile(@RequestParam("file") MultipartFile file) {
+        ApiResult apiResponse = middleService.processFile(file);
+        return ResponseEntity.ok(apiResponse);
+    }
+}
+@Service
+public class SyncMiddleService {
 
-    } catch (SafePathCheckException | IOException e) {
-        throw new DataExtractionException(e.getMessage());
-    } finally {
-        // Properly shutdown the thread pool
-        threadPool.shutdown(); // Initiates an orderly shutdown
+    @Autowired
+    private ExternalApiClient externalApi;
+    
+    @Autowired
+    private AsyncFileService asyncFileService;
+
+    public ApiResult processFile(MultipartFile file) {
+        // 1. Make synchronous API call
+        ApiResult apiResponse = externalApi.callExternalService(file);
+        
+        // 2. Initiate async processing
+        String transactionId = UUID.randomUUID().toString();
+        asyncFileService.handleFileUpload(file, transactionId);
+        
+        // 3. Combine results for immediate response
+        return new ApiResult(
+            apiResponse.getData(), 
+            transactionId,
+            "PROCESSING"
+        );
+    }
+}
+@Service
+public class AsyncFileService {
+
+    @Autowired
+    private FileRepository fileRepo;
+
+    @Async("fileUploadTaskExecutor")
+    public void handleFileUpload(MultipartFile file, String transactionId) {
         try {
-            if (!threadPool.awaitTermination(60, TimeUnit.SECONDS)) { // Wait for tasks to finish
-                System.err.println("Thread pool did not terminate within the timeout. Forcing shutdown...");
-                threadPool.shutdownNow(); // Force shutdown if tasks don't complete in time
-            }
-        } catch (InterruptedException ex) {
-            System.err.println("Thread pool shutdown interrupted. Forcing shutdown...");
-            threadPool.shutdownNow(); // Force shutdown on interruption
-            Thread.currentThread().interrupt(); // Restore interrupted status
+            // 1. Save file to fileserver
+            Path filePath = Paths.get("/storage/" + file.getOriginalFilename());
+            Files.write(filePath, file.getBytes());
+
+            // 2. Update database
+            fileRepo.save(new FileRecord(
+                transactionId,
+                file.getOriginalFilename(),
+                "COMPLETED",
+                Instant.now()
+            ));
+        } catch (IOException e) {
+            fileRepo.updateStatus(transactionId, "FAILED");
         }
     }
 }
+@Configuration
+@EnableAsync
+public class AsyncConfig {
 
-
-Create a MultiValueMap to hold the parts of the request:
-
-MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-
-Add the FileUploadRequest as a JSON part:
-
-FileUploadRequest request = new FileUploadRequest();
-// Set properties of request
-HttpHeaders jsonHeaders = new HttpHeaders();
-jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
-HttpEntity<FileUploadRequest> requestEntity = new HttpEntity<>(request, jsonHeaders);
-body.add("json", requestEntity);
-
-Add the MultipartFile objects:
-
-for (MultipartFile file : files) {
-    HttpHeaders fileHeaders = new HttpHeaders();
-    fileHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
-    HttpEntity<ByteArrayResource> fileEntity = new HttpEntity<>(
-        new ByteArrayResource(file.getBytes()) {
-            @Override
-            public String getFilename() {
-                return file.getOriginalFilename();
-            }
-        }, fileHeaders);
-    body.add("files", fileEntity);
+    @Bean(name = "fileUploadTaskExecutor")
+    public Executor fileUploadExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(25);
+        executor.setThreadNamePrefix("FileUpload-");
+        executor.initialize();
+        return executor;
+    }
+}
+@Entity
+public class FileRecord {
+    @Id
+    private String transactionId;
+    private String filename;
+    private String status;
+    private Instant processedAt;
+    // getters/setters
 }
 
-Set the headers for the entire request:
-
-HttpHeaders headers = new HttpHeaders();
-headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-Create the final HttpEntity:
-
-HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-Send the request using RestTemplate:
-
-RestTemplate restTemplate = new RestTemplate();
-ResponseEntity<String> response = restTemplate.postForEntity(
-    "http://your-api-url/upload",
-    requestEntity,
-    String.class
-);
 
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-
-@Mapper(componentModel = "spring")
-public interface UserMapper {
-    
-    @Mapping(source = "password", target = "hashedPassword")
-    User toModel(UserDTO userDTO);
-
-    @Mapping(source = "hashedPassword", target = "password")
-    UserDTO toDTO(User user);
-}
