@@ -96,3 +96,14 @@ public class FileRecord {
 
 
 
+    public static int countPages(InputStream pdfStream) throws IOException {
+        try (BufferedInputStream bis = new BufferedInputStream(pdfStream)) {
+            PDFParser parser = new PDFParser(bis);
+            parser.parse();
+            try (PDDocument document = parser.getPDDocument()) {
+                return document.getNumberOfPages();
+            }
+        } catch (ClassCastException e) {
+            throw new IOException("Corrupted PDF structure: " + e.getMessage());
+        }
+    }
