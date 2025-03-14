@@ -5,7 +5,7 @@ Flatten XFA with iText pdfXFA (AGPL)
 Count Pages with Apache PDFBox (Apache 2.0)
 
 1. Flatten Dynamic XFA (iText pdfXFA)
-
+```
 import com.itextpdf.xfa.XFAFlattener;
 import com.itextpdf.xfa.XFAFlattenerProperties;
 import com.itextpdf.xfa.MetaData;
@@ -25,9 +25,9 @@ public class XFAFlattenerDemo {
         }
     }
 }
-
+```
 2. Count Pages (Apache PDFBox)
-
+```
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 public class PageCounter {
@@ -37,8 +37,8 @@ public class PageCounter {
         }
     }
 }
-
-
+```
+```
 <!-- iText Core (AGPL) -->
 <dependency>
     <groupId>com.itextpdf</groupId>
@@ -59,12 +59,13 @@ public class PageCounter {
     <artifactId>pdfbox</artifactId>
     <version>2.0.27</version>
 </dependency>
-
+```
 Key Considerations
 Licensing: iText operates under AGPLv3, requiring open-sourcing derivative works. For closed-source projects, consider commercial licensing.
 
 Dynamic Content: Flattening resolves variable layouts caused by XFA's dynamic nature.
 
 Performance: PDFBox uses partial loading for large files:
-
+```
 PDDocument.load(new File("large.pdf"), MemoryUsageSetting.setupMixed(1024 * 1024)); // 1MB buffer[3]
+```
