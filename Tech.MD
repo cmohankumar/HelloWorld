@@ -68,4 +68,88 @@ Dynamic Content: Flattening resolves variable layouts caused by XFA's dynamic na
 Performance: PDFBox uses partial loading for large files:
 ```
 PDDocument.load(new File("large.pdf"), MemoryUsageSetting.setupMixed(1024 * 1024)); // 1MB buffer[3]
+
+```
+Status update on Upload
+```
+import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+public class UploadProcessor {
+    private static final Executor executor = Executors.newFixedThreadPool(5);
+
+    public void processUpload(IncomingRequest request) {
+        // Initialize status objects for each file
+        initializeUploadStatus(request);
+        
+        List<CompletableFuture<Void>> futures = request.getFiles().stream()
+            .map(file -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        // 1. Upload file and get docId from response
+                        String docId = uploadFile(file); 
+                        
+                        // 2. Update docIdMap
+                        request.getDocIdMap().put(file.getOriginalFilename(), docId);
+                        
+                        // 3. Update upload status
+                        updateStatus(request.getUploadStatus(), 
+                                   file.getOriginalFilename(), 
+                                   "SUCCESS", 
+                                   null);
+                        return file.getOriginalFilename();
+                    } catch (Exception e) {
+                        updateStatus(request.getUploadStatus(),
+                                   file.getOriginalFilename(),
+                                   "FAILED",
+                                   e.getMessage());
+                        throw new RuntimeException(e);
+                    }
+                }, executor))
+            .map(future -> future.thenAccept(fileName -> 
+                System.out.println("Completed: " + fileName)))
+            .toList();
+
+        // Wait for all uploads to complete
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+            .exceptionally(ex -> {
+                System.err.println("Error in uploads: " + ex.getMessage());
+                return null;
+            })
+            .join();
+    }
+
+    private void initializeUploadStatus(IncomingRequest request) {
+        request.setUploadStatus(
+            request.getFiles().stream()
+                .map(file -> new UploadStatus(
+                    "PENDING",
+                    file.getOriginalFilename(),
+                    null))
+                .toList()
+        );
+    }
+
+    private void updateStatus(List<UploadStatus> statusList, 
+                            String fileName, 
+                            String status, 
+                            String reason) {
+        statusList.stream()
+            .filter(s -> s.getFileName().equals(fileName))
+            .findFirst()
+            .ifPresent(s -> {
+                s.setStatus(status);
+                s.setReason(reason);
+            });
+    }
+
+    // Implement your actual file upload logic here
+    private String uploadFile(MultipartFile file) throws Exception {
+        // Your file upload implementation
+        return "generated-doc-id"; 
+    }
+}
 ```
