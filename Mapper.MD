@@ -34,3 +34,32 @@ public interface BarcodeDataToDocumentsMapper {
     }
 }
 ```
+
+````
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Mapper
+public interface BarcodeDataToDocumentsMapper {
+    BarcodeDataToDocumentsMapper INSTANCE = Mappers.getMapper(BarcodeDataToDocumentsMapper.class);
+
+    default List<Documents> barcodeDataListToDocumentsList(List<BarcodeData> barcodeDataList) {
+        if (barcodeDataList == null) {
+            return null;
+        }
+        
+        return barcodeDataList.stream()
+            .map(this::mapBarcodeDataToDocuments)
+            .collect(Collectors.toList());
+    }
+
+    @Mapping(source = "docId", target = "documentIdentifier")
+    @Mapping(source = "formData", target = "formCode.formData")
+    @Mapping(target = "fileType", ignore = true)
+    @Mapping(target = "documentDetailText", ignore = true)
+    Documents mapBarcodeDataToDocuments(BarcodeData barcodeData);
+}
+````
