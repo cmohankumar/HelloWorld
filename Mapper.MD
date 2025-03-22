@@ -93,3 +93,33 @@ public interface DigitalRequestToDocStoreMapper {
 }
 
 ```
+
+```
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class DocStoreService {
+
+    private final DigitalRequestToDocStoreMapper mapper;
+    private final DocStoreRepository docStoreRepository;
+
+    @Autowired
+    public DocStoreService(DigitalRequestToDocStoreMapper mapper, DocStoreRepository docStoreRepository) {
+        this.mapper = mapper;
+        this.docStoreRepository = docStoreRepository;
+    }
+
+    @Transactional
+    public List<DocStore> processAndSaveDigitalRequest(DigitalRequest digitalRequest) {
+        return digitalRequest.getFiles().stream()
+            .filter(file -> !"application/json".equals(file.getContentType()))
+            .map(file -> mapper.mapFileToDocStore(digitalRequest, file))
+            .collect(Collectors.collectingAndThen(Collectors.toList(), docStoreRepository::saveAll));
+    }
+}
+
+```
