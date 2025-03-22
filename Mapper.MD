@@ -74,17 +74,22 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface DigitalRequestToDocStoreMapper {
 
-    @Mapping(target = "docId", source = "transactionId")
+    @Mapping(target = "docId", expression = "java(getDocIdFromMap(digitalRequest.getDocIdMap(), file.getOriginalFilename()))")
     @Mapping(target = "sourceFileType", expression = "java(file.getContentType())")
     @Mapping(target = "sourceFileName", expression = "java(file.getOriginalFilename())")
     @Mapping(target = "sourceFileSize", expression = "java(file.getSize())")
     @Mapping(target = "sourceTotalPages", ignore = true)
-    DocStore fileToDocStore(String transactionId, MultipartFile file);
+    DocStore mapFileToDocStore(DigitalRequest digitalRequest, MultipartFile file);
 
-    default List<DocStore> digitalRequestToDocStoreList(DigitalRequest digitalRequest) {
+    default List<DocStore> mapDigitalRequestToDocStores(DigitalRequest digitalRequest) {
         return digitalRequest.getFiles().stream()
-                .map(file -> fileToDocStore(digitalRequest.getTransactionId(), file))
+                .map(file -> mapFileToDocStore(digitalRequest, file))
                 .collect(Collectors.toList());
     }
+
+    default String getDocIdFromMap(Map<String, String> docIdMap, String originalFilename) {
+        return docIdMap != null ? docIdMap.get(originalFilename) : null;
+    }
 }
+
 ```
