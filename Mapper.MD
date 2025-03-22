@@ -63,3 +63,28 @@ public interface BarcodeDataToDocumentsMapper {
     Documents mapBarcodeDataToDocuments(BarcodeData barcodeData);
 }
 ````
+
+```
+import org.mapstruct.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Mapper(componentModel = "spring")
+public interface DigitalRequestToDocStoreMapper {
+
+    @Mapping(target = "docId", source = "transactionId")
+    @Mapping(target = "sourceFileType", expression = "java(file.getContentType())")
+    @Mapping(target = "sourceFileName", expression = "java(file.getOriginalFilename())")
+    @Mapping(target = "sourceFileSize", expression = "java(file.getSize())")
+    @Mapping(target = "sourceTotalPages", ignore = true)
+    DocStore fileToDocStore(String transactionId, MultipartFile file);
+
+    default List<DocStore> digitalRequestToDocStoreList(DigitalRequest digitalRequest) {
+        return digitalRequest.getFiles().stream()
+                .map(file -> fileToDocStore(digitalRequest.getTransactionId(), file))
+                .collect(Collectors.toList());
+    }
+}
+```
