@@ -123,3 +123,31 @@ public class DocStoreService {
 }
 
 ```
+
+```
+@Configuration
+@OpenAPIDefinition(info = @Info(title = "File Upload API", version = "1.0"))
+public class OpenApiConfig {
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+            .path("/upload", new PathItem()
+                .post(new Operation()
+                    .summary("Upload files with JSON data")
+                    .requestBody(new RequestBody()
+                        .content(new Content()
+                            .addMediaType(MediaType.MULTIPART_FORM_DATA_VALUE, 
+                                new MediaType()
+                                    .schema(new Schema<>()
+                                        .type("object")
+                                        .addProperties("json", new Schema<>().type("string").format("binary"))
+                                        .addProperties("files", new ArraySchema().items(new Schema<>().type("string").format("binary")))
+                                    )
+                            )
+                        )
+                    )
+                )
+            );
+    }
+}
+```
