@@ -105,3 +105,47 @@ public class AsyncS3Uploader {
 }
 
 ```
+
+```
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
+import software.amazon.awssdk.transfer.s3.model.Upload;
+import software.amazon.awssdk.transfer.s3.model.UploadRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+
+public class S3MultipartUploadExample {
+
+    public void uploadMultipartFile(MultipartFile file, String bucketName, String key) throws IOException {
+        // Create an instance of the S3 Transfer Manager
+        S3TransferManager transferManager = S3TransferManager.create();
+
+        // Build the PutObjectRequest
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .contentType(file.getContentType())
+                .build();
+
+        // Build the UploadRequest using AsyncRequestBody
+        UploadRequest uploadRequest = UploadRequest.builder()
+                .putObjectRequest(putObjectRequest)
+                .requestBody(AsyncRequestBody.fromInputStream(file.getInputStream(), file.getSize()))
+                .build();
+
+        // Perform the file upload
+        Upload upload = transferManager.upload(uploadRequest);
+
+        // Wait for the upload to complete
+        upload.completionFuture().join();
+
+        // Close the Transfer Manager
+        transferManager.close();
+
+        System.out.println("File uploaded successfully!");
+    }
+}
+
+```
