@@ -1,3 +1,4 @@
+```
 src/main/java
 ├── com
 │   └── example
@@ -15,7 +16,7 @@ src/main/java
 │           │   └── OrderRequest.java
 │           └── service
 │               └── OrderProcessingService.java
-
+```
 ```
 package com.example.microservice.clients;
 
