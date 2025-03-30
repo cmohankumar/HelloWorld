@@ -88,7 +88,6 @@ public interface OrderServiceClient {
 ```
 
 ```
-```
 package com.example.microservice.clients.impl;
 
 import com.example.microservice.clients.OrderServiceClient;
@@ -129,6 +128,7 @@ public class OrderServiceClientImpl implements OrderServiceClient {
 }
 
 ```
+
 ```
 package com.example.microservice.service;
 
