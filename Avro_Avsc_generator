@@ -1,0 +1,31 @@
+```
+public static void generateAvroSchema(Class<?> dtoClass) throws IOException {
+    AvroMapper avroMapper = AvroMapper.builder()
+        .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+        .addModule(new AvroJavaTimeModule())
+        .build();
+    
+    AvroSchemaGenerator gen = new AvroSchemaGenerator();
+    gen.enableLogicalTypes();
+    avroMapper.acceptJsonFormatVisitor(dtoClass, gen);
+    
+    AvroSchema schemaWrapper = gen.getGeneratedSchema();
+    org.apache.avro.Schema avroSchema = schemaWrapper.getAvroSchema();
+    
+    String avroSchemaJson = avroSchema.toString(true);
+    Files.writeString(Path.of(dtoClass.getSimpleName() + ".avsc"), avroSchemaJson);
+}
+```
+
+```
+<dependency>
+    <groupId>org.apache.avro</groupId>
+    <artifactId>avro</artifactId>
+    <version>1.10.2</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-avro</artifactId>
+    <version>2.14.2</version>
+</dependency>
+```
