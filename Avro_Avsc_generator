@@ -29,3 +29,12 @@ public static void generateAvroSchema(Class<?> dtoClass) throws IOException {
     <version>2.14.2</version>
 </dependency>
 ```
+
+```
+public static void generateAvroSchema(Class<?> dtoClass) throws IOException {
+    Schema schema = ReflectData.get().getSchema(dtoClass);
+    String avroSchemaJson = schema.toString(true);
+    Files.writeString(Path.of(dtoClass.getSimpleName() + ".avsc"), avroSchemaJson);
+}
+
+````
