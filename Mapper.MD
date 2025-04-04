@@ -151,3 +151,23 @@ public class OpenApiConfig {
     }
 }
 ```
+```
+@Mapper
+public interface FileMapper {
+    
+    FileMapper INSTANCE = Mappers.getMapper(FileMapper.class);
+
+    @Mapping(source = "file", target = "contentType", qualifiedByName = "detectContentType")
+    FileDTO toDto(FileEntity file);
+
+    @Named("detectContentType") // Names the method for reference
+    default String detectContentType(FileEntity file) {
+        try {
+            return new Tika().detect(file.getInputStream());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to detect MIME type", e);
+        }
+    }
+}
+
+```
