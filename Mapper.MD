@@ -211,3 +211,33 @@ public ResponseEntity<?> handleUpload(
         : ResponseEntity.badRequest().body("Invalid file(s) detected");
 }
 ```
+```
+@RestController
+@RequestMapping("/files")
+public class FileController {
+
+    @Autowired
+    private FileProcessingService fileProcessingService;
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadFiles(
+        @RequestParam("files") List<MultipartFile> files,
+        @RequestHeader(value = "trace-id", required = false) String traceId
+    ) {
+        // Validate trace-id header
+        return (traceId == null || traceId.isBlank())
+            ? ResponseEntity.badRequest().body("No trace-id found")
+            : !FileValidator.areValidFiles(files)
+                ? ResponseEntity.badRequest().body("Invalid file(s) detected")
+                : processValidFiles(files, traceId);
+    }
+
+    private ResponseEntity<?> processValidFiles(List<MultipartFile> files, String traceId) {
+        try {
+            return ResponseEntity.ok(fileProcessingService.processFiles(files, traceId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Processing failed");
+        }
+    }
+}
+```
