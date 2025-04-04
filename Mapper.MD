@@ -171,3 +171,43 @@ public interface FileMapper {
 }
 
 ```
+```
+public class FileValidator {
+
+    private static final Tika TIKA = new Tika();
+
+    // Single file validation
+    public static boolean isValidFile(MultipartFile file) {
+        try {
+            String detectedType = TIKA.detect(
+                file.getInputStream(), 
+                file.getOriginalFilename()
+            );
+            return !"application/octet-stream".equals(detectedType);
+        } catch (IOException e) {
+            return false;  // IOException → invalid file
+        }
+    }
+
+    // Multiple files validation
+    public static boolean areValidFiles(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            return false;  // Handle empty/null input
+        }
+        
+        return files.stream()
+            .allMatch(FileValidator::isValidFile);
+    }
+}
+```
+```
+@PostMapping("/upload")
+public ResponseEntity<?> handleUpload(
+    @RequestParam("files") List<MultipartFile> files
+) {
+    boolean isValid = FileValidator.areValidFiles(files);
+    return isValid 
+        ? ResponseEntity.ok("All files valid") 
+        : ResponseEntity.badRequest().body("Invalid file(s) detected");
+}
+```
